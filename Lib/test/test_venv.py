@@ -360,6 +360,30 @@ class BasicTest(BaseTest):
             'pool.terminate()'])
         self.assertEqual(out.strip(), "python".encode())
 
+    def test_deactivate_with_strict_bash_opts(self):
+        bash = None
+        for prefix in ['/bin', '/usr/bin/', '/usr/local/bin']:
+            sh = os.path.join(prefix, 'bash')
+            if os.path.isfile(sh):
+                bash = sh
+        if bash is None:
+            self.skipTest("bash required for this test")
+        rmtree(self.env_dir)
+        builder = venv.EnvBuilder(clear=True)
+        builder.create(self.env_dir)
+        activate = os.path.join(self.env_dir, self.bindir, 'activate')
+        test_script = os.path.join(self.env_dir, 'test_strict.sh')
+        with open(test_script, 'w') as f:
+            f.write("""
+set -euo pipefail
+source {}
+deactivate
+            """.format(activate))
+        out, err = check_output([bash, test_script])
+        self.assertEqual(out, "".encode())
+        self.assertEqual(err, "".encode())
+
+
 @requireVenvCreate
 class EnsurePipTest(BaseTest):
     """Test venv module installation of pip."""
